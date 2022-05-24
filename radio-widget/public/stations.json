@@ -1,0 +1,27 @@
+[
+    {
+        "_id": "1",
+        "station_name": "Putin FM",
+        "postcode": 66.6
+    },
+    {
+        "_id": "2",
+        "station_name": "Dribbble FM",
+        "postcode": 101.2
+    },
+    {
+        "_id": "3",
+        "station_name": "Doge FM",
+        "postcode": 99.4
+    },
+    {
+        "_id": "4",
+        "station_name": "Ballads FM",
+        "postcode": 88.2
+    },
+    {
+        "_id": "5",
+        "station_name": "Maximum FM",
+        "postcode": 142.2
+    }
+]
