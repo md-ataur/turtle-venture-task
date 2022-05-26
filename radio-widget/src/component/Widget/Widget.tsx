@@ -18,7 +18,7 @@ const Widget = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('./stations.json')
+        fetch('https://peaceful-mountain-98601.herokuapp.com/station')
             .then((res) => res.json())
             .then((data) => setStations(data))
             .finally(() => {
