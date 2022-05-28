@@ -34,6 +34,10 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(methodOverride('_method'));
 
+// Home Page
+app.get('/', (req, res) => {
+    res.render('index');
+});
 
 // Login Page
 app.get('/login', (req, res) => {
@@ -59,11 +63,6 @@ app.get("/profile", async (req, res) => {
         .catch((error) => {
             res.redirect("/login");
         });
-});
-
-// Home Page
-app.get('/', (req, res) => {
-    res.render('index');
 });
 
 // Post Api for login
