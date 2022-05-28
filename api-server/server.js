@@ -5,7 +5,6 @@ const admin = require("firebase-admin");
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
 const stationRoute = require('./routes/stations');
-const csrf = require("csurf");
 const DB = require('./models/db');
 
 const app = express();
@@ -29,20 +28,12 @@ database.once("open", function () {
 // Set EJS template engine for viewing
 app.set('view engine', 'ejs');
 
-const csrfProtection = csrf({ cookie: true });
-
 // Enable Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(csrfProtection);
 app.use(methodOverride('_method'));
 
-// Takes any requests and sets a cookie called XSRF-TOKEN
-app.all("*", (req, res, next) => {
-    res.cookie("XSRF-TOKEN", req.csrfToken());
-    next();
-});
 
 // Login Page
 app.get('/login', (req, res) => {
@@ -59,10 +50,11 @@ app.get("/profile", async (req, res) => {
     const stations = await DB.find();
     const sessionCookie = req.cookies.session || "";
 
+    // Verify session cookie
     admin.auth().verifySessionCookie(sessionCookie, true)
         .then((userData) => {
             console.log("Logged in:", userData.email)
-            res.render('profile', { csrfToken: req.csrfToken(), stations: stations });
+            res.render('profile', { stations: stations });
         })
         .catch((error) => {
             res.redirect("/login");
@@ -77,7 +69,6 @@ app.get('/', (req, res) => {
 // Post Api for login
 app.post("/sessionLogin", (req, res) => {
     const idToken = req.body.idToken.toString();
-
     // Set session expiration.
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
 
