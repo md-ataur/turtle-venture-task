@@ -1,28 +1,42 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-const csrf = require("csurf");
+const bodyParser = require("body-parser");
 const admin = require("firebase-admin");
-const router = express.Router();
+const mongoose = require('mongoose');
+const methodOverride = require('method-override');
+const stationRoute = require('./routes/stations');
+const csrf = require("csurf");
+const DB = require('./models/db');
 
+const app = express();
+const port = process.env.PORT || 5000;
+
+
+// Firebase admin SDK initialize
 const serviceAccount = require("./firebase-adminsdk.json");
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
-// Check if have the required cookies in each request
-const csrfMiddleware = csrf({ cookie: true });
-
-const app = express();
-const port = process.env.PORT || 5000;
+// Database connection to the cloud atlas
+mongoose.connect(`mongodb+srv://dbuser1:9P2AGUUElq70TuhK@cluster0.juclx.mongodb.net/myDBStore?retryWrites=true&w=majority`);
+const database = mongoose.connection;
+database.on("error", console.error.bind(console, "Connection error: "));
+database.once("open", function () {
+    console.log("Database Connected successfully");
+});
 
 // Set EJS template engine for viewing
 app.set('view engine', 'ejs');
 
-// Enable bodyParser, cookieParser and csrfMiddleware
+const csrfProtection = csrf({ cookie: true });
+
+// Enable Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(csrfMiddleware);
+app.use(csrfProtection);
+app.use(methodOverride('_method'));
 
 // Takes any requests and sets a cookie called XSRF-TOKEN
 app.all("*", (req, res, next) => {
@@ -30,27 +44,25 @@ app.all("*", (req, res, next) => {
     next();
 });
 
-// Router set
-app.use('/', router);
-
 // Login Page
-router.get('/login', (req, res) => {
+app.get('/login', (req, res) => {
     res.render('auth/login');
 });
 
 // Register Page
-router.get('/register', (req, res) => {
+app.get('/register', (req, res) => {
     res.render('auth/register')
 });
 
 // Profile page
-app.get("/profile", function (req, res) {
+app.get("/profile", async (req, res) => {
+    const stations = await DB.find();
     const sessionCookie = req.cookies.session || "";
 
     admin.auth().verifySessionCookie(sessionCookie, true)
         .then((userData) => {
             console.log("Logged in:", userData.email)
-            res.render("profile");
+            res.render('profile', { csrfToken: req.csrfToken(), stations: stations });
         })
         .catch((error) => {
             res.redirect("/login");
@@ -58,13 +70,12 @@ app.get("/profile", function (req, res) {
 });
 
 // Home Page
-router.get('/', (req, res) => {
+app.get('/', (req, res) => {
     res.render('index');
 });
 
 // Post Api for login
 app.post("/sessionLogin", (req, res) => {
-    // Get token
     const idToken = req.body.idToken.toString();
 
     // Set session expiration.
@@ -88,6 +99,9 @@ app.get("/sessionLogout", (req, res) => {
     res.clearCookie("session");
     res.redirect("/login");
 });
+
+// Router set
+app.use('/stations', stationRoute);
 
 app.get('/', (req, res) => {
     res.send('Server is running');
